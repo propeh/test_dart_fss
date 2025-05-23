@@ -120,24 +120,42 @@ class DartAPI {
      * 회사명으로 회사코드 검색
      */
     findCorpCode(companyName) {
+        console.log('findCorpCode 호출됨 - 검색어:', companyName);
+        console.log('corpCodeData 상태:', this.corpCodeData ? '로드됨' : '로드되지 않음');
+        
         if (!this.corpCodeData) {
+            console.error('회사코드 데이터가 로드되지 않았습니다.');
             throw new Error('회사코드 데이터가 로드되지 않았습니다.');
         }
 
+        console.log('전체 회사 데이터 개수:', Object.keys(this.corpCodeData).length);
+
         // 정확한 이름 매치
         if (this.corpCodeData[companyName]) {
+            console.log('정확한 매치 발견:', this.corpCodeData[companyName]);
             return this.corpCodeData[companyName];
         }
 
         // 부분 매치 시도
         const searchName = companyName.trim().toLowerCase();
+        console.log('부분 매치 시도 - 검색어:', searchName);
+        
+        const matchedCompanies = [];
         for (const [name, data] of Object.entries(this.corpCodeData)) {
             if (name.toLowerCase().includes(searchName) || 
                 searchName.includes(name.toLowerCase())) {
-                return data;
+                matchedCompanies.push({ name, data });
             }
         }
+        
+        console.log('부분 매치 결과:', matchedCompanies);
+        
+        if (matchedCompanies.length > 0) {
+            console.log('첫 번째 매치 반환:', matchedCompanies[0].data);
+            return matchedCompanies[0].data;
+        }
 
+        console.log('검색 결과 없음');
         return null;
     }
 
@@ -145,10 +163,17 @@ class DartAPI {
      * 회사명 자동완성 검색
      */
     searchCompanies(query, limit = 10) {
-        if (!this.corpCodeData || !query) return [];
+        console.log('searchCompanies 호출됨 - 검색어:', query, '제한:', limit);
+        
+        if (!this.corpCodeData || !query) {
+            console.log('corpCodeData 또는 query가 없음');
+            return [];
+        }
         
         const searchQuery = query.trim().toLowerCase();
         const results = [];
+        
+        console.log('실제 검색 시작 - 변환된 검색어:', searchQuery);
         
         for (const [name, data] of Object.entries(this.corpCodeData)) {
             if (name.toLowerCase().includes(searchQuery)) {
@@ -161,6 +186,7 @@ class DartAPI {
             }
         }
         
+        console.log('자동완성 검색 결과:', results);
         return results;
     }
 

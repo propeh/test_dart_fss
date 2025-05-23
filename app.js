@@ -14,8 +14,37 @@ class DartViewApp {
     /**
      * 애플리케이션 초기화
      */
-    init() {
+    async init() {
         this.setupEventListeners();
+        
+        // CORPCODE.xml 로딩 상태 표시
+        this.showAlert('회사 데이터를 로딩중입니다...', 'info');
+        
+        // DART API 초기화 대기 (최대 30초)
+        let retryCount = 0;
+        const maxRetries = 30;
+        
+        while (retryCount < maxRetries) {
+            if (window.dartAPI && window.dartAPI.corpCodeData) {
+                this.hideAlert();
+                this.showAlert(`회사 데이터 로딩 완료! ${Object.keys(window.dartAPI.corpCodeData).length}개 회사 검색 가능`, 'success');
+                setTimeout(() => this.hideAlert(), 3000);
+                break;
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            retryCount++;
+            
+            if (retryCount === 10) {
+                this.showAlert('회사 데이터 로딩 중... 잠시만 기다려주세요.', 'warning');
+            }
+            
+            if (retryCount === maxRetries) {
+                this.showAlert('회사 데이터 로딩에 시간이 오래 걸리고 있습니다. 새로고침을 시도해보세요.', 'danger');
+                break;
+            }
+        }
+        
         this.showApiKeyPrompt();
         console.log('DartView 애플리케이션 초기화 완료');
     }
@@ -700,4 +729,58 @@ let app;
 // DOM 로드 완료 후 앱 초기화
 document.addEventListener('DOMContentLoaded', () => {
     app = new DartViewApp();
-}); 
+});
+
+// 디버깅 함수 (전역)
+function debugCorpData() {
+    console.log('=== 회사 데이터 디버깅 ===');
+    
+    if (!window.dartAPI) {
+        console.error('dartAPI 인스턴스가 없습니다.');
+        alert('dartAPI 인스턴스가 없습니다.');
+        return;
+    }
+    
+    if (!window.dartAPI.corpCodeData) {
+        console.error('corpCodeData가 로드되지 않았습니다.');
+        alert('회사 데이터가 아직 로드되지 않았습니다.\n잠시 후 다시 시도해주세요.');
+        return;
+    }
+    
+    const companyCount = Object.keys(window.dartAPI.corpCodeData).length;
+    console.log('로드된 회사 수:', companyCount);
+    
+    // 샘플 회사들 확인
+    const sampleCompanies = ['삼성전자', 'LG전자', 'SK하이닉스', '현대자동차', '네이버'];
+    const foundCompanies = [];
+    const notFoundCompanies = [];
+    
+    sampleCompanies.forEach(company => {
+        if (window.dartAPI.corpCodeData[company]) {
+            foundCompanies.push(company);
+        } else {
+            notFoundCompanies.push(company);
+        }
+    });
+    
+    console.log('찾은 샘플 회사들:', foundCompanies);
+    console.log('못 찾은 샘플 회사들:', notFoundCompanies);
+    
+    // 첫 번째 회사 몇 개 출력
+    const firstCompanies = Object.keys(window.dartAPI.corpCodeData).slice(0, 5);
+    console.log('데이터에 있는 첫 5개 회사:', firstCompanies);
+    
+    // 검색 테스트
+    const testSearch = window.dartAPI.searchCompanies('삼성', 3);
+    console.log('삼성 검색 결과:', testSearch);
+    
+    alert(`
+회사 데이터 상태:
+- 총 ${companyCount}개 회사 로드됨
+- 샘플 회사 찾기: ${foundCompanies.length}/${sampleCompanies.length}개 성공
+- 찾은 회사: ${foundCompanies.join(', ')}
+- 못 찾은 회사: ${notFoundCompanies.join(', ')}
+
+자세한 정보는 개발자 도구 콘솔을 확인하세요.
+    `);
+} 
